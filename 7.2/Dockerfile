@@ -1,10 +1,10 @@
-FROM alpine:3.9
+FROM alpine:latest
 
 ARG BUILD_CORES
 
-ARG NGINX_VER=1.15.9
+ARG NGINX_VER=1.17.5
 ARG PHP_VER=7.2.24
-ARG LIBICONV_VERSION=1.15
+ARG LIBICONV_VERSION=1.16
 
 LABEL description="nginx + php image based on Alpine" \
       maintainer="Wonderfall <wonderfall@targaryen.house>" \
