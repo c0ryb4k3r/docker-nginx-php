@@ -119,8 +119,7 @@ COPY rootfs /
 RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
 
 ### Packages installation
- && BUILD_DEPS=" \
-    linux-headers \
+ && BUILD_DEPS="linux-headers \
     libtool \
     build-base \
     pcre-dev \
