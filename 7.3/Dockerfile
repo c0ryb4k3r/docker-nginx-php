@@ -2,8 +2,11 @@ FROM alpine:latest
 
 ARG BUILD_CORES
 
+### https://github.com/nginx/nginx/releases
 ARG NGINX_VER=1.17.8
+### https://www.php.net/downloads.php
 ARG PHP_VER=7.3.14
+### https://www.gnu.org/software/libiconv/
 ARG LIBICONV_VERSION=1.16
 
 LABEL description="nginx + php image based on Alpine; taken from Wonderfall" \
