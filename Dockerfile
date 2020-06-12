@@ -5,7 +5,7 @@ ARG BUILD_CORES
 ### https://github.com/nginx/nginx/releases
 ARG NGINX_VER=1.19.0
 ### https://www.php.net/downloads.php
-ARG PHP_VER=7.4.6
+ARG PHP_VER=7.4.7
 ### https://www.gnu.org/software/libiconv/
 ARG LIBICONV_VERSION=1.16
 
