@@ -3,9 +3,9 @@ FROM alpine:latest
 ARG BUILD_CORES
 
 ### https://github.com/nginx/nginx/releases
-ARG NGINX_VER=1.19.0
+ARG NGINX_VER=1.19.1
 ### https://www.php.net/downloads.php
-ARG PHP_VER=7.4.7
+ARG PHP_VER=7.4.8
 ### https://www.gnu.org/software/libiconv/
 ARG LIBICONV_VERSION=1.16
 
