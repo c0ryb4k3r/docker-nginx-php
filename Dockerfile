@@ -2,17 +2,16 @@ FROM alpine:latest
 
 ARG BUILD_CORES
 
-### https://github.com/nginx/nginx/releases
-ARG NGINX_VER=1.19.2
-### https://www.php.net/downloads.php
-ARG PHP_VER=7.4.9
+ARG NGINX_URL=https://github.com/nginx/nginx/releases
+ARG NGINX_VER
+ARG PHP_URL=https://www.php.net/downloads.php
+ARG PHP_VER
+
 ### https://www.gnu.org/software/libiconv/
 ARG LIBICONV_VERSION=1.16
 
 LABEL description="nginx + php image based on Alpine; taken from Wonderfall" \
-      maintainer="Cory Baker <C0ry.B4k3r@gmail.com>" \
-      php_version="PHP v$PHP_VER built from source" \
-      nginx_version="nginx v$NGINX_VER built from source"
+      maintainer="Cory Baker <C0ry.B4k3r@gmail.com>"
 
 ARG NGINX_CONF=" \
     --prefix=/nginx \
@@ -119,8 +118,28 @@ ARG CUSTOM_PKGS=" \
 
 COPY rootfs /
 
-RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
-
+RUN echo '********************* Beginning RUN *********************' \
+ && NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
+ && echo '********************* START NGINX SECTION *********************' \
+ && if [ "x$NGINX_VER" = "x" ] ; then \
+	echo 'Detecting latest NGINX Release'; \
+	wget $NGINX_URL -O /tmp/nginx_releases; \
+	NGINX_VERSIONS=$(cat /tmp/nginx_releases | grep "class=\"release-entry\"" -A 14 | grep -io '<a href=['"'"'"][^"'"'"']*['"'"'"]' | sed -e 's/^<a href=["'"'"']//i' -e 's/["'"'"']$//i' | awk -F '-' '{print $2}'); \
+	NGINX_VER=$(echo ${NGINX_VERSIONS} | awk -F ' ' '{print $1}'); \
+	rm -rf /tmp/nginx_releases; \
+ fi \
+ && echo "Using NGINX version [${NGINX_VER}]" >> /nginx_release \
+ && echo '********************* END NGINX SECTION *********************' \
+ && echo '********************* START PHP SECTION *********************' \
+ && if [ "x$PHP_VER" = "x" ] ; then \
+	echo 'Detecting latest PHP Release'; \
+	wget $PHP_URL -O /tmp/php_releases; \
+	PHP_VERSIONS=$(cat /tmp/php_releases | grep "class=\"release-state\"" -A 1 | sed -e 's/<span.*//' -e 's/(<a.*//' -e 's/--//' | sed -r '/^\s*$/d'); \
+	PHP_VER=$(echo ${PHP_VERSIONS} | awk -F ' ' '{print $2}'); \
+	rm -rf /tmp/php_releases; \
+ fi \
+ && echo "Using PHP version [${PHP_VER}]" >> /php_release \
+ && echo '********************* END PHP SECTION *********************' \
 ### Packages installation
  && BUILD_DEPS="linux-headers \
     libtool \
@@ -156,7 +175,6 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
     pcre \
     zlib \
     ${CUSTOM_PKGS} \
-
 ### Source downloading
  && wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz -O /tmp/nginx-${NGINX_VER}.tar.gz \
  && wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz.asc -O /tmp/nginx-${NGINX_VER}.tar.gz.asc \
@@ -168,25 +186,21 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
  && tar xzf /tmp/nginx-${NGINX_VER}.tar.gz -C /usr/src \
  && tar xzvf /tmp/php-${PHP_VER}.tar.gz -C /usr/src \
  && tar xzf /tmp/libiconv-${LIBICONV_VERSION}.tar.gz -C /usr/src \
-
 ### nginx installation
  && cd /usr/src/nginx-${NGINX_VER} \
  && ./configure --with-cc-opt="-O3 -fPIE -fstack-protector-strong" ${NGINX_CONF} \
  && make -j ${NB_CORES} \
  && make install \
-
 ### GNU Libiconv installation
  && cd /usr/src/libiconv-${LIBICONV_VERSION} \
  && ./configure --prefix=/usr/local \
  && make && make install && libtool --finish /usr/local/lib \
-
 ### PHP installation
  && mv /usr/src/php-${PHP_VER} /usr/src/php \
  && cd /usr/src/php \
  && ./configure CFLAGS="-O3 -fstack-protector-strong" ${PHP_CONF} \
  && make -j ${NB_CORES} \
  && make install \
-
 ### Strip, clean, install modules
  && { find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; } \
  && make clean \
@@ -194,4 +208,5 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
  && docker-php-ext-install ${PHP_EXT_LIST} \
  && apk del ${BUILD_DEPS} \
  && rm -rf /tmp/* /var/cache/apk/* /usr/src/* \
- && mkdir -p /nginx/logs /nginx/run /php/php-fpm.d /php/logs /php/run /php/session
+ && mkdir -p /nginx/logs /nginx/run /php/php-fpm.d /php/logs /php/run /php/session \
+ && echo '********************* END RUN *********************'
