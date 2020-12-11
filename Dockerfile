@@ -3,9 +3,9 @@ FROM alpine:latest
 ARG BUILD_CORES
 
 ARG NGINX_URL=https://github.com/nginx/nginx/releases
-ARG NGINX_VER
+ARG NGINX_VER=1.19
 ARG PHP_URL=https://www.php.net/downloads.php
-ARG PHP_VER
+ARG PHP_VER=7.4
 
 ### https://www.gnu.org/software/libiconv/
 ARG LIBICONV_VERSION=1.16
@@ -127,7 +127,14 @@ RUN echo '********************* Beginning RUN *********************' \
 	NGINX_VERSIONS=$(cat /tmp/nginx_releases | grep "class=\"release-entry\"" -A 14 | grep -io '<a href=['"'"'"][^"'"'"']*['"'"'"]' | sed -e 's/^<a href=["'"'"']//i' -e 's/["'"'"']$//i' | awk -F '-' '{print $2}'); \
 	NGINX_VER=$(echo ${NGINX_VERSIONS} | awk -F ' ' '{print $1}'); \
 	rm -rf /tmp/nginx_releases; \
+ else \
+ 	echo "Detecting latest NGINX ${NGINX_VER} Release"; \
+	wget $NGINX_URL -O /tmp/nginx_releases; \
+	NGINX_VERSIONS=$(cat /tmp/nginx_releases | grep "class=\"release-entry\"" -A 14 | grep -io '<a href=['"'"'"][^"'"'"']*['"'"'"]' | sed -e 's/^<a href=["'"'"']//i' -e 's/["'"'"']$//i' | awk -F '-' '{print $2}' | grep ${NGINX_VER}); \
+	NGINX_VER=$(echo ${NGINX_VERSIONS} | awk -F ' ' '{print $1}'); \
+	rm -rf /tmp/nginx_releases; \
  fi \
+ && echo "Using NGINX version [${NGINX_VER}]" \
  && echo "Using NGINX version [${NGINX_VER}]" >> /nginx_release \
  && echo '********************* END NGINX SECTION *********************' \
  && echo '********************* START PHP SECTION *********************' \
@@ -137,7 +144,14 @@ RUN echo '********************* Beginning RUN *********************' \
 	PHP_VERSIONS=$(cat /tmp/php_releases | grep "class=\"release-state\"" -A 1 | sed -e 's/<span.*//' -e 's/(<a.*//' -e 's/--//' | sed -r '/^\s*$/d'); \
 	PHP_VER=$(echo ${PHP_VERSIONS} | awk -F ' ' '{print $2}'); \
 	rm -rf /tmp/php_releases; \
+ else \
+ 	echo "Detecting latest ${PHP_VER} Release"; \
+	wget $PHP_URL -O /tmp/php_releases; \
+	PHP_VERSIONS=$(cat /tmp/php_releases | grep "class=\"release-state\"" -A 1 | sed -e 's/<span.*//' -e 's/(<a.*//' -e 's/--//' | sed -r '/^\s*$/d' | grep ${PHP_VER}); \
+	PHP_VER=$(echo ${PHP_VERSIONS} | awk -F ' ' '{print $2}'); \
+	rm -rf /tmp/php_releases; \
  fi \
+ && echo "Using PHP version [${PHP_VER}]" \
  && echo "Using PHP version [${PHP_VER}]" >> /php_release \
  && echo '********************* END PHP SECTION *********************' \
 ### Packages installation
