@@ -64,7 +64,6 @@ ARG PHP_EXT_LIST=" \
     mysqli \
     ctype \
     dom \
-    json \
     xml \
     mbstring \
     posix \
@@ -116,7 +115,7 @@ ARG CUSTOM_PKGS=" \
     libpq \
     c-client"
 
-COPY rootfs /
+COPY rootfs/ /
 
 RUN echo '********************* Beginning RUN *********************' \
  && NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
@@ -189,7 +188,7 @@ RUN echo '********************* Beginning RUN *********************' \
     pcre \
     zlib \
     ${CUSTOM_PKGS} \
-### Source downloading
+ && echo '********************* Downloading PHP & NGINX *********************' \
  && wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz -O /tmp/nginx-${NGINX_VER}.tar.gz \
  && wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz.asc -O /tmp/nginx-${NGINX_VER}.tar.gz.asc \
  && wget https://www.php.net/distributions/php-${PHP_VER}.tar.gz -O /tmp/php-${PHP_VER}.tar.gz \
@@ -200,25 +199,26 @@ RUN echo '********************* Beginning RUN *********************' \
  && tar xzf /tmp/nginx-${NGINX_VER}.tar.gz -C /usr/src \
  && tar xzvf /tmp/php-${PHP_VER}.tar.gz -C /usr/src \
  && tar xzf /tmp/libiconv-${LIBICONV_VERSION}.tar.gz -C /usr/src \
-### nginx installation
+ && echo '********************* nginx installation *********************' \
  && cd /usr/src/nginx-${NGINX_VER} \
  && ./configure --with-cc-opt="-O3 -fPIE -fstack-protector-strong" ${NGINX_CONF} \
  && make -j ${NB_CORES} \
  && make install \
-### GNU Libiconv installation
+ && echo '********************* GNU Libiconv installation *********************' \
  && cd /usr/src/libiconv-${LIBICONV_VERSION} \
  && ./configure --prefix=/usr/local \
  && make && make install && libtool --finish /usr/local/lib \
-### PHP installation
+ && echo '********************* PHP installation *********************' \
  && mv /usr/src/php-${PHP_VER} /usr/src/php \
  && cd /usr/src/php \
  && ./configure CFLAGS="-O3 -fstack-protector-strong" ${PHP_CONF} \
  && make -j ${NB_CORES} \
  && make install \
-### Strip, clean, install modules
+ && echo '********************* Strip, clean *********************' \
  && { find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; } \
  && make clean \
  && chmod u+x /usr/local/bin/* /etc/s6.d/*/* \
+ && echo '********************* install modules *********************' \
  && docker-php-ext-install ${PHP_EXT_LIST} \
  && apk del ${BUILD_DEPS} \
  && rm -rf /tmp/* /var/cache/apk/* /usr/src/* \
